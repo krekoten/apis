@@ -17,6 +17,21 @@ module DirHelper
 end
 
 module SinatraHelper
+  def server_port
+    1234
+  end
+
+  def server_host
+    "http://localhost:#{server_port}"
+  end
+
+  def start_server
+    %x{unicorn -p 1234 #{root}/spec/test_app.ru -D -P #{root}/spec/uni.pid} # 3&> /dev/null
+  end
+
+  def stop_server
+    %x{kill `cat #{root}/spec/uni.pid`}
+  end
 end
 
 RSpec.configure do |rspec|
