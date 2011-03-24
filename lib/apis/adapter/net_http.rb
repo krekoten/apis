@@ -10,23 +10,22 @@ module Apis
         end
       end
 
-      [:get, :post, :put, :delete, :head].each do |method|
-        class_eval <<-CODE, __FILE__, __LINE__ + 1
-          def #{method}(path)
-            block = block_given? ? Proc.new : nil
-            perform_request(#{method.inspect}, path, &block)
-          end
-        CODE
+      def connection
+        Net::HTTP.start(uri.host, uri.port)
       end
 
       # Performs request to resource
-      def perform_request(method, path)
+      # @param [Symbol, String] method HTTP method to perform
+      # @param [String] path Relative path to resource host
+      # @return [Array] headers, body
+      def run(method, path, block = nil)
         _module = Net::HTTP.const_get(method.to_s.capitalize)
         request = _module.new(path)
-        response = Net::HTTP.start(uri.host, uri.port) do |http|
-          http.request(request)
-        end
+        response = connection.request(request)
+        [response.code.to_i] + response
       end
+
+      Apis::Adapter.register :net_http, self
     end
   end
 end

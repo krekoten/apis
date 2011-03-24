@@ -10,6 +10,10 @@ Middleware = Class.new(BaseMiddleware)
 NewMiddleware = Class.new(BaseMiddleware)
 RESTMiddleware = Class.new(BaseMiddleware)
 
+class FakeAdapter
+  attr_accessor :uri
+end
+
 module DirHelper
   def root
     @root ||= File.expand_path('../..', __FILE__)

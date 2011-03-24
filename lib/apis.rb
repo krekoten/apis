@@ -9,6 +9,13 @@ module Apis
     autoload :NetHTTP,    'apis/adapter/net_http'
 
     class << self
+      # Default connection adapter
+      # You can change it by assignin new value 
+      def default
+        @default ||= :net_http
+      end
+      attr_writer :default
+
       def register(symbol, klass)
         @lookup_table ||= {}
         @lookup_table[symbol] = klass

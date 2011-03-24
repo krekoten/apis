@@ -4,7 +4,7 @@ describe Apis::Connection do
   context 'configuration' do
     context 'options' do
       it 'sets url' do
-        Apis::Connection.new(:url => 'http://api.example.org').url.should == 'http://api.example.org'
+        Apis::Connection.new(:uri => 'http://api.example.org').uri.should == Addressable::URI.parse('http://api.example.org')
       end
 
       it 'sets headers' do
@@ -29,8 +29,8 @@ describe Apis::Connection do
     context 'methods' do
       let(:connection) { Apis::Connection.new }
       it 'sets url' do
-        connection.url = 'http://api.example.org'
-        connection.url.should == 'http://api.example.org'
+        connection.uri = 'http://api.example.org'
+        connection.uri.should == Addressable::URI.parse('http://api.example.org')
       end
 
       it 'sets headers' do
@@ -92,9 +92,55 @@ describe Apis::Connection do
 
       it 'sets adapter' do
         connection = Apis::Connection.new do
-          adapter Apis::Adapter::NetHTTP.new
+          adapter FakeAdapter.new
         end
-        connection.adapter.should be_instance_of(Apis::Adapter::NetHTTP)
+        connection.adapter.should be_instance_of(FakeAdapter)
+      end
+
+      it 'finds adapter using symbol shortcut' do
+        Apis::Adapter.register(:fake, FakeAdapter)
+        connection = Apis::Connection.new do
+          adapter :fake
+        end
+        connection.adapter.should be_instance_of(FakeAdapter)
+      end
+
+      it 'uses default adapter if none specified' do
+        Apis::Connection.new.adapter.should_not be_nil
+      end
+    end
+  end
+
+  context 'performing request' do
+    before(:all) do
+      start_server
+    end
+
+    after(:all) do
+      stop_server
+    end
+
+    context 'simple' do
+      [:get, :head, :post, :put, :delete].each do |method|
+        context method.to_s.upcase do
+          it 'returns body' do
+            connection = Apis::Connection.new(:uri => server_host)
+            status, headers, body = connection.send(method)
+            body.should == method.to_s.upcase
+          end unless method == :head
+
+          it 'returns headers' do
+            connection = Apis::Connection.new(:uri => server_host)
+            status, headers, body = connection.send(method)
+            headers['X-Requested-With-Method'].should == method.to_s.upcase
+          end
+
+          it 'returns headers' do
+            connection = Apis::Connection.new(:uri => server_host)
+            status, headers, body = connection.send(method)
+            status.should == 200
+          end
+        end
       end
     end
   end

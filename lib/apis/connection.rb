@@ -1,7 +1,6 @@
 module Apis
   class Connection
-    attr_accessor :url
-    attr_reader :headers, :params
+    attr_reader :headers, :params, :uri
 
     def initialize(oprions = {})
       @headers, @params = {}, {}
@@ -12,6 +11,11 @@ module Apis
         block = Proc.new
         instance_eval(&block)
       end
+      adapter(Apis::Adapter.default) unless @adapter
+    end
+
+    def uri=(value)
+      @uri = Addressable::URI.parse(value)
     end
 
     def headers=(value)
@@ -23,24 +27,36 @@ module Apis
     end
 
     def request
-      if block_given?
-        block = Proc.new
-        @request = Apis::Builder.new(&block)
-      end
+      block = block_given? ? Proc.new : nil
+      @request ||= Apis::Builder.new(&block)
       @request
     end
 
     def response
-      if block_given?
-        block = Proc.new
-        @response = Apis::Builder.new(&block)
-      end
+      block = block_given? ? Proc.new : nil
+      @response ||= Apis::Builder.new(&block)
       @response
     end
 
     def adapter(value = nil)
-      @adapter = value if value
+      if Symbol === value
+        value = Apis::Adapter.get_instance(value)
+      end
+      if value
+        @adapter = value
+        @adapter.uri = uri
+      end
       @adapter
+    end
+
+    [:get, :head, :post, :put, :delete].each do |method|
+      class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        def #{method}(path = nil)
+          block = block_given? ? Proc.new : nil
+          path ||= uri.path.empty? ? '/' : uri.path
+          adapter.run(#{method.inspect}, path, block)
+        end
+      RUBY
     end
   end
 end
