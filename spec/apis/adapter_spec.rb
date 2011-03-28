@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Apis::Adapter do
   it 'registers adapters shortnames' do
     Apis::Adapter.register(:fake, FakeAdapter)
-    Apis::Adapter.get_instance(:fake).should be_instance_of(FakeAdapter)
+    Apis::Adapter.lookup(:fake).should == FakeAdapter
   end
 
   specify ':net_http is set as default adapter' do

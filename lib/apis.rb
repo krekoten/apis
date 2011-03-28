@@ -2,11 +2,13 @@ $: << lib_dir unless $:.include?(lib_dir = File.expand_path('..', __FILE__))
 
 module Apis
   class DuplicateMiddleware < StandardError; end
-  autoload :Connection, 'apis/connection'
-  autoload :Builder,    'apis/builder'
+  autoload :Connection,       'apis/connection'
+  autoload :ConnectionScope,  'apis/connection_scope'
+  autoload :Builder,          'apis/builder'
 
   module Adapter
-    autoload :NetHTTP,    'apis/adapter/net_http'
+    autoload :Abstract,         'apis/adapter/abstract'
+    autoload :NetHTTP,          'apis/adapter/net_http'
 
     class << self
       # Default connection adapter
@@ -21,10 +23,9 @@ module Apis
         @lookup_table[symbol] = klass
       end
 
-      def get_instance(symbol)
+      def lookup(symbol)
         @lookup_table ||= {}
-        klass = @lookup_table[symbol]
-        klass.new if klass
+        @lookup_table[symbol]
       end
     end
   end

@@ -92,7 +92,7 @@ describe Apis::Connection do
 
       it 'sets adapter' do
         connection = Apis::Connection.new do
-          adapter FakeAdapter.new
+          adapter FakeAdapter
         end
         connection.adapter.should be_instance_of(FakeAdapter)
       end
@@ -112,34 +112,69 @@ describe Apis::Connection do
   end
 
   context 'performing request' do
-    before(:all) do
-      start_server
+    before do
+      @connection = Apis::Connection.new(:uri => server_host) do
+        adapter FakeAdapter
+      end
     end
 
-    after(:all) do
-      stop_server
-    end
+    [:get, :head, :post, :put, :delete].each do |method|
+      context method.to_s.upcase do
+        it 'passes method to adapter' do
+          @connection.send(method)
+          @connection.adapter.last_method.should == method
+        end
 
-    context 'simple' do
-      [:get, :head, :post, :put, :delete].each do |method|
-        context method.to_s.upcase do
-          it 'returns body' do
-            connection = Apis::Connection.new(:uri => server_host)
-            status, headers, body = connection.send(method)
-            body.should == method.to_s.upcase
-          end unless method == :head
+        it 'passes path to adapter' do
+          @connection.send(method, "/#{method}")
+          @connection.adapter.last_path.should == "/#{method}"
+        end
 
-          it 'returns headers' do
-            connection = Apis::Connection.new(:uri => server_host)
-            status, headers, body = connection.send(method)
-            headers['X-Requested-With-Method'].should == method.to_s.upcase
+        it 'passes query params to adapter' do
+          @connection.send(method, "/#{method}", {:q => 'text'})
+          @connection.adapter.last_params.should == {:q => 'text'}
+        end
+
+        it 'passes params specified in block' do
+          @connection.send(method, "/#{method}") do |request|
+            request.params = {:test => 'params'}
           end
+          @connection.adapter.last_params.should == {:test => 'params'}
+        end
 
-          it 'returns headers' do
-            connection = Apis::Connection.new(:uri => server_host)
-            status, headers, body = connection.send(method)
-            status.should == 200
+        it 'doesn\'t not overwrite params of connection' do
+          @connection.params = {:q => 'test'}
+          @connection.send(method, "/#{method}") do |request|
+            request.params = {:test => 'params'}
           end
+          @connection.adapter.last_params.should == {:q => 'test', :test => 'params'}
+          @connection.params.should == {:q => 'test'}
+        end
+
+        it 'merges connection params with method params' do
+          @connection.params = {:test => 'param'}
+          @connection.send(method, "/#{method}", {:q => 'text'})
+          @connection.adapter.last_params.should == {:q => 'text', :test => 'param'}
+        end
+
+        it 'passes headers to adapter' do
+          @connection.send(method, "/#{method}", {}, {'Content-Type' => 'text'})
+          @connection.adapter.last_headers.should == {'Content-Type' => 'text'}
+        end
+
+        it 'merges connection headers with method headers' do
+          @connection.headers = {'User-Agent' => 'apis'}
+          @connection.send(method, "/#{method}", {}, {'Content-Type' => 'text'})
+          @connection.adapter.last_headers.should == {'Content-Type' => 'text', 'User-Agent' => 'apis'}
+        end
+
+        it 'doesn\'t not overwrite headers of connection' do
+          @connection.headers = {:q => 'test'}
+          @connection.send(method, "/#{method}") do |request|
+            request.headers = {:test => 'params'}
+          end
+          @connection.adapter.last_headers.should == {:q => 'test', :test => 'params'}
+          @connection.headers.should == {:q => 'test'}
         end
       end
     end

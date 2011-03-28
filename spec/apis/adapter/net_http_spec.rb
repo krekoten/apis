@@ -28,6 +28,12 @@ describe Apis::Adapter::NetHTTP do
         status, headers, body = adapter.run(method, '/')
         status.should == 200
       end
+
+      it "sends params" do
+        adapter = Apis::Adapter::NetHTTP.new(:uri => Addressable::URI.parse(server_host))
+        status, headers, body = adapter.run(method, "/#{method}", {:param => 'value'})
+        headers['X-Sent-Params'].should == '{"param"=>"value"}'
+      end
     end
   end
 

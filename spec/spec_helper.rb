@@ -10,8 +10,11 @@ Middleware = Class.new(BaseMiddleware)
 NewMiddleware = Class.new(BaseMiddleware)
 RESTMiddleware = Class.new(BaseMiddleware)
 
-class FakeAdapter
-  attr_accessor :uri
+class FakeAdapter < Apis::Adapter::Abstract
+  attr_accessor :last_method, :last_path, :last_params, :last_headers
+  def run(method, path = nil, params = {}, headers = {})
+    @last_method, @last_path, @last_params, @last_headers = method, path, params, headers
+  end
 end
 
 module DirHelper
@@ -30,7 +33,7 @@ module SinatraHelper
   end
 
   def start_server
-    %x{unicorn -p 1234 #{root}/spec/test_app.ru -D -P #{root}/spec/uni.pid} # 3&> /dev/null
+    %x{unicorn -p #{server_port} #{root}/spec/test_app.ru -D -P #{root}/spec/uni.pid} # 3&> /dev/null
   end
 
   def stop_server

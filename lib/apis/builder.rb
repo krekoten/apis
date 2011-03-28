@@ -1,12 +1,9 @@
 module Apis
   class Builder
-    def initialize
+    def initialize(&block)
       @stack = []
       @mapping = {}
-      if block_given?
-        block = Proc.new
-        block_eval(&block)
-      end
+      block_eval(&block) if block
     end
 
     def use(middleware)
@@ -44,6 +41,7 @@ module Apis
     def to_a
       @mapping.to_a.sort { |a, b| a.last <=> b.last}.map { |e| e.first }
     end
+    alias to_ary to_s
 
     def to_app
       unless @stack.empty?
