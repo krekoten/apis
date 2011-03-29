@@ -46,7 +46,7 @@ module Apis
     def to_app
       unless @stack.empty?
         inner_app = @stack.last.call(nil)
-        @stack.reverse.inject(inner_app) { |parent, lazy| lazy.call(parent) }
+        @stack.reverse[1..-1].inject(inner_app) { |parent, lazy| lazy.call(parent) }
       else
         []
       end

@@ -74,4 +74,14 @@ describe Apis::Builder do
     app.app.should be_instance_of(NewMiddleware)
     app.app.app.should be_instance_of(RESTMiddleware)
   end
+
+  it 'inserts middleware only once' do
+    builder = Apis::Builder.new do
+      use Middleware
+    end
+
+    app = builder.to_app
+    app.should be_instance_of(Middleware)
+    app.app.should be_nil
+  end
 end
