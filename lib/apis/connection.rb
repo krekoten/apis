@@ -66,14 +66,22 @@ module Apis
       RUBY
     end
 
-    def run_request(method, path = nil, params = {}, headers = {})
-      block = block_given? ? Proc.new : nil
+    def run_request(method, path = nil, params = {}, headers = {}, &block)
+      #block = block_given? ? Proc.new : nil
+      # TODO: refactor this, it's ugly
       @scope.scoped do
         self.params = params if params
         self.headers = headers if headers
         block.call(self) if block
         path ||= uri.path.empty? ? '/' : uri.path
-        adapter.run(method, path, self.params, self.headers)
+        self.request.to_app.call(
+          :method => method,
+          :params => self.params,
+          :headers => self.headers
+        ) unless self.request.to_a.empty?
+        res = Apis::Response.new(*adapter.run(method, path, self.params, self.headers))
+        self.response.to_app.call(res) unless self.response.to_a.empty?
+        res
       end
     end
   end

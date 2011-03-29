@@ -5,6 +5,7 @@ module Apis
   autoload :Connection,       'apis/connection'
   autoload :ConnectionScope,  'apis/connection_scope'
   autoload :Builder,          'apis/builder'
+  autoload :Response,         'apis/response'
 
   module Adapter
     autoload :Abstract,         'apis/adapter/abstract'

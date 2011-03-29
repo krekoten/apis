@@ -23,25 +23,18 @@
 
 ## Request Middleware
 
-
 ### Example
 
 		class Request::Middleware
-			def initialize(app = nil)
-				@app = app
-			end
-			
 			def call(env)
-				env[:body] += "\nlol"
+				env[:params][:token] = 'abcdef'
 			end
 		end
 
 ### Description
 
 Basically, request middleware is an object that responds to `#call`.
-It will be initialized with middleware that it is decorating. So middleware object
-initializer should accept object and after performing necessary actions send it `#call`
-message.
+It will be initialized with args passed if any.
 
 ### Environment
 

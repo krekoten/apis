@@ -6,14 +6,27 @@ class BaseMiddleware
     @app = app
   end
 end
-Middleware = Class.new(BaseMiddleware)
+class Middleware < BaseMiddleware
+  def call(env)
+    env[:params][:middleware] = 'true'
+    env[:headers]['Middleware'] = 'true'
+    @app.call(env) if @app
+  end
+end
 NewMiddleware = Class.new(BaseMiddleware)
 RESTMiddleware = Class.new(BaseMiddleware)
+
+class Response < BaseMiddleware
+  def call(env)
+    env[:body] = 'altered'
+  end
+end
 
 class FakeAdapter < Apis::Adapter::Abstract
   attr_accessor :last_method, :last_path, :last_params, :last_headers
   def run(method, path = nil, params = {}, headers = {})
     @last_method, @last_path, @last_params, @last_headers = method, path, params, headers
+    [200, {}, 'body']
   end
 end
 

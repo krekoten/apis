@@ -168,7 +168,7 @@ describe Apis::Connection do
           @connection.adapter.last_headers.should == {'Content-Type' => 'text', 'User-Agent' => 'apis'}
         end
 
-        it 'doesn\'t not overwrite headers of connection' do
+        it 'doesn\'t overwrite headers of connection' do
           @connection.headers = {:q => 'test'}
           @connection.send(method, "/#{method}") do |request|
             request.headers = {:test => 'params'}
@@ -176,6 +176,46 @@ describe Apis::Connection do
           @connection.adapter.last_headers.should == {:q => 'test', :test => 'params'}
           @connection.headers.should == {:q => 'test'}
         end
+      end
+    end
+  end
+
+  context 'request with middleware' do
+    context 'request middleware' do
+      before do
+        @connection = Apis::Connection.new(:uri => server_host) do
+          request do
+            use Middleware
+          end
+          adapter FakeAdapter
+        end
+      end
+
+      it 'calls midleware' do
+        @connection.get
+        @connection.adapter.last_headers.should == {'Middleware' => 'true'}
+      end
+
+      it "doesn't overwrite headers of connection" do
+        @connection.get
+        @connection.adapter.last_headers.should == {'Middleware' => 'true'}
+        @connection.headers.should == {}
+      end
+    end
+
+    context 'response midleware' do
+      before do
+        @connection = Apis::Connection.new(:uri => server_host) do
+          adapter FakeAdapter
+          response do
+            use Response
+          end
+        end
+      end
+
+      it 'calls midleware' do
+        response = @connection.get
+        response.body.should == 'altered'
       end
     end
   end
