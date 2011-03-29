@@ -10,6 +10,7 @@ module Apis
   module Adapter
     autoload :Abstract,         'apis/adapter/abstract'
     autoload :NetHTTP,          'apis/adapter/net_http'
+    autoload :RackTest,         'apis/adapter/rack_test'
 
     class << self
       # Default connection adapter
