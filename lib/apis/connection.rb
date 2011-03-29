@@ -47,13 +47,13 @@ module Apis
 
     def request
       block = block_given? ? Proc.new : nil
-      @request ||= Apis::Builder.new(&block)
+      @request ||= Apis::Builder.new(:lookup_context => Apis::Middleware::Request, &block)
       @request
     end
 
     def response
       block = block_given? ? Proc.new : nil
-      @response ||= Apis::Builder.new(&block)
+      @response ||= Apis::Builder.new(:lookup_context => Apis::Middleware::Response, &block)
       @response
     end
 

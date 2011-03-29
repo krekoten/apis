@@ -48,4 +48,10 @@ describe Apis::Adapter::RackTest do
       end
     end
   end
+
+  it 'registered under :rack_test' do
+    Apis::Connection.new do
+      adapter :rack_test
+    end.adapter.should be_instance_of(Apis::Adapter::RackTest)
+  end
 end

@@ -1,6 +1,10 @@
 module Apis
   class Builder
-    def initialize(&block)
+    attr_accessor :lookup_context
+    def initialize(options = {}, &block)
+      options.each do |key, value|
+        send("#{key}=", value) if respond_to?("#{key}=")
+      end
       @stack = []
       @mapping = {}
       block_eval(&block) if block
@@ -11,13 +15,14 @@ module Apis
     end
 
     def replace(old, middleware)
-      if index = @mapping[old]
+      if index = index(old)
         insert(middleware, index)
         remove(old)
       end
     end
 
     def insert(middleware, index = nil)
+      middleware = lookup_middleware(middleware)
       raise Apis::DuplicateMiddleware, "#{middleware} already in stack" if include?(middleware)
       index ||= @stack.length
       @stack[index] = lambda do |parent|
@@ -27,7 +32,13 @@ module Apis
     end
 
     def remove(middleware)
+      middleware = lookup_middleware(middleware)
       @stack.delete_at(@mapping.delete(middleware))
+    end
+
+    def index(middleware)
+      middleware = lookup_middleware(middleware)
+      @mapping[middleware]
     end
 
     def length
@@ -35,7 +46,7 @@ module Apis
     end
 
     def include?(middleware)
-      !!@mapping[middleware]
+      !!index(middleware)
     end
 
     def to_a
@@ -54,6 +65,12 @@ module Apis
 
     def block_eval(&block)
       instance_eval(&block)
+    end
+
+    def lookup_middleware(middleware)
+      @lookup_context && !(Class === middleware) ?
+        @lookup_context.lookup(middleware) :
+        middleware
     end
   end
 end

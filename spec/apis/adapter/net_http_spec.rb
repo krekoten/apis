@@ -37,7 +37,7 @@ describe Apis::Adapter::NetHTTP do
     end
   end
 
-  it 'registers itself under :net_http' do
+  it 'registered under :net_http' do
     Apis::Connection.new do
       adapter :net_http
     end.adapter.should be_instance_of(Apis::Adapter::NetHTTP)

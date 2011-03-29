@@ -7,10 +7,24 @@ module Apis
   autoload :Builder,          'apis/builder'
   autoload :Response,         'apis/response'
 
+  module Registerable
+    def register(symbol, klass)
+      @lookup_table ||= {}
+      @lookup_table[symbol] = klass
+    end
+
+    def lookup(symbol)
+      @lookup_table ||= {}
+      self.const_get(@lookup_table[symbol])
+    end
+  end
+
   module Adapter
     autoload :Abstract,         'apis/adapter/abstract'
     autoload :NetHTTP,          'apis/adapter/net_http'
     autoload :RackTest,         'apis/adapter/rack_test'
+
+    extend Registerable
 
     class << self
       # Default connection adapter
@@ -19,16 +33,6 @@ module Apis
         @default ||= :net_http
       end
       attr_writer :default
-
-      def register(symbol, klass)
-        @lookup_table ||= {}
-        @lookup_table[symbol] = klass
-      end
-
-      def lookup(symbol)
-        @lookup_table ||= {}
-        self.const_get(@lookup_table[symbol])
-      end
     end
 
     register :net_http, :NetHTTP
@@ -36,8 +40,16 @@ module Apis
   end
 
   module Middleware
+    module Request
+      extend Registerable
+    end
+
     module Response
       autoload :Json,           'apis/middleware/response/json'
+
+      extend Registerable
+
+      register :json, :Json
     end
   end
 end

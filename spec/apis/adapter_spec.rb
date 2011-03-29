@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Apis::Adapter do
   it 'registers adapters shortnames' do
-    Apis::Adapter.register(:fake, FakeAdapter)
+    Apis::Adapter.register(:fake, :FakeAdapter)
     Apis::Adapter.lookup(:fake).should == FakeAdapter
   end
 

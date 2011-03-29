@@ -84,4 +84,17 @@ describe Apis::Builder do
     app.should be_instance_of(Middleware)
     app.app.should be_nil
   end
+
+  it 'lookups middleware by shortcut if lookup object givven' do
+    Lookup = Module.new do
+      extend Apis::Registerable
+    end
+    Lookup.register(:middleware, :Middleware)
+    builder = Apis::Builder.new(:lookup_context => Lookup) do
+      use :middleware
+    end
+
+    app = builder.to_app
+    app.should be_instance_of(Middleware)
+  end
 end

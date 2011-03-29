@@ -102,7 +102,7 @@ describe Apis::Connection do
       end
 
       it 'finds adapter using symbol shortcut' do
-        Apis::Adapter.register(:fake, FakeAdapter)
+        Apis::Adapter.register(:fake, :FakeAdapter)
         connection = Apis::Connection.new do
           adapter :fake
         end
@@ -189,9 +189,10 @@ describe Apis::Connection do
   context 'request with middleware' do
     context 'request middleware' do
       before do
+        Apis::Middleware::Request.register(:middleware, :Middleware)
         @connection = Apis::Connection.new(:uri => server_host) do
           request do
-            use Middleware
+            use :middleware
           end
           adapter FakeAdapter
         end
@@ -211,10 +212,11 @@ describe Apis::Connection do
 
     context 'response midleware' do
       before do
+        Apis::Middleware::Response.register(:res, :Response)
         @connection = Apis::Connection.new(:uri => server_host) do
           adapter FakeAdapter
           response do
-            use Response
+            use :res
           end
         end
       end
