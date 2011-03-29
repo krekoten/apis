@@ -31,4 +31,10 @@ module Apis
       end
     end
   end
+
+  module Middleware
+    module Response
+      autoload :Json,           'apis/middleware/response/json'
+    end
+  end
 end

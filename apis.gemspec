@@ -24,5 +24,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rack-test'
   s.add_development_dependency 'unicorn'
 
+  # Middlewares
+  s.add_development_dependency 'multi_json'
+  s.add_development_dependency 'yajl-ruby'
+
   s.add_dependency 'addressable'
 end

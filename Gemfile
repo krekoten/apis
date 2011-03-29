@@ -4,3 +4,4 @@ source "http://rubygems.org"
 gemspec
 
 gem 'rack-test', :require => 'rack/test'
+gem 'yajl-ruby', :require => 'yajl'
