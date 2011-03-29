@@ -7,6 +7,10 @@ describe Apis::Connection do
         Apis::Connection.new(:uri => 'http://api.example.org').uri.should == Addressable::URI.parse('http://api.example.org')
       end
 
+      it 'sets url if it is only parameter' do
+        Apis::Connection.new('http://api.example.org').uri.should == Addressable::URI.parse('http://api.example.org')
+      end
+
       it 'sets headers' do
         Apis::Connection.new(
           :headers => {

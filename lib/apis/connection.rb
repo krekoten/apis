@@ -1,11 +1,19 @@
+require 'addressable/uri'
+
 module Apis
   class Connection
-    def initialize(oprions = {})
+    def initialize(options = {})
       @scope = Apis::ConnectionScope.new
       @scope.headers, @scope.params = {}, {}
-      oprions.each do |key, value|
-        send("#{key}=", value) if respond_to?("#{key}=")
+
+      if String === options
+        self.uri = options
+      else
+        options.each do |key, value|
+          send("#{key}=", value) if respond_to?("#{key}=")
+        end
       end
+
       if block_given?
         block = Proc.new
         instance_eval(&block)
