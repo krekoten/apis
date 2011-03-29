@@ -110,7 +110,9 @@ describe Apis::Connection do
       end
 
       it 'uses default adapter if none specified' do
-        Apis::Connection.new.adapter.should_not be_nil
+        connection = Apis::Connection.new
+        connection.adapter nil
+        connection.adapter.should be_instance_of(Apis::Adapter::NetHTTP)
       end
     end
   end

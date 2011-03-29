@@ -16,8 +16,6 @@ module Apis
         )
         [response.code.to_i] + response
       end
-
-      Apis::Adapter.register :net_http, self
     end
   end
 end

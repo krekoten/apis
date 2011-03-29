@@ -27,9 +27,12 @@ module Apis
 
       def lookup(symbol)
         @lookup_table ||= {}
-        @lookup_table[symbol]
+        self.const_get(@lookup_table[symbol])
       end
     end
+
+    register :net_http, :NetHTTP
+    register :rack_test, :RackTest
   end
 
   module Middleware
