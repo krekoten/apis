@@ -1,100 +1,24 @@
 require 'spec_helper'
 
 describe Apis::Builder do
-  it 'adds middleware to stack' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    builder.length.should == 1
-  end
-
-  it 'raises error when duplicate middleware added' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    expect { builder.use Middleware }.to raise_error(Apis::DuplicateMiddleware, 'Middleware already in stack')
-  end
-
-  it 'shows if middleware in stack' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    builder.include?(Middleware).should == true
-  end
-
-  it 'replaces middleware with another' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    builder.use RESTMiddleware
-    builder.replace Middleware, NewMiddleware
-    builder.include?(Middleware).should == false
-    builder.include?(NewMiddleware).should == true
-    builder.to_a.should == [NewMiddleware, RESTMiddleware]
-  end
-
-  it 'removes middleware from stack' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    builder.include?(Middleware).should == true
-    builder.remove(Middleware)
-    builder.include?(Middleware).should == false
-  end
-
-  it 'returns stacked middlewares in order' do
-    builder = Apis::Builder.new
-    builder.use Middleware
-    builder.use NewMiddleware
-    builder.use RESTMiddleware
-    app = builder.to_app
-    app.should be_instance_of(Middleware)
-    app.app.should be_instance_of(NewMiddleware)
-    app.app.app.should be_instance_of(RESTMiddleware)
-  end
-
-  it 'evals block' do
-    builder = Apis::Builder.new
-    builder.block_eval do |builder|
-      use Middleware
+  it 'builds appilcation stack' do
+    app = Apis::Builder.new do
       use NewMiddleware
       use RESTMiddleware
-    end
-
-    app = builder.to_app
-    app.should be_instance_of(Middleware)
-    app.app.should be_instance_of(NewMiddleware)
-    app.app.app.should be_instance_of(RESTMiddleware)
+      adapter FakeAdapter
+    end.to_app
+    app.should be_instance_of(NewMiddleware)
+    app.app.should be_instance_of(RESTMiddleware)
+    app.app.app.should be_instance_of(FakeAdapter)
   end
 
-  it 'evals block passed to constructor' do
-    builder = Apis::Builder.new do
-      use Middleware
+  it 'uses default adapter if none specified' do
+    app = Apis::Builder.new do
       use NewMiddleware
       use RESTMiddleware
-    end
-
-    app = builder.to_app
-    app.should be_instance_of(Middleware)
-    app.app.should be_instance_of(NewMiddleware)
-    app.app.app.should be_instance_of(RESTMiddleware)
-  end
-
-  it 'inserts middleware only once' do
-    builder = Apis::Builder.new do
-      use Middleware
-    end
-
-    app = builder.to_app
-    app.should be_instance_of(Middleware)
-    app.app.should be_nil
-  end
-
-  it 'lookups middleware by shortcut if lookup object givven' do
-    Lookup = Module.new do
-      extend Apis::Registerable
-    end
-    Lookup.register(:middleware, :Middleware)
-    builder = Apis::Builder.new(:lookup_context => Lookup) do
-      use :middleware
-    end
-
-    app = builder.to_app
-    app.should be_instance_of(Middleware)
+    end.to_app
+    app.should be_instance_of(NewMiddleware)
+    app.app.should be_instance_of(RESTMiddleware)
+    app.app.app.should be_instance_of(Apis::Adapter::NetHTTP)
   end
 end

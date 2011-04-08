@@ -1,10 +1,13 @@
 $: << lib_dir unless $:.include?(lib_dir = File.expand_path('..', __FILE__))
 
+require 'addressable/uri'
+
 module Apis
   class DuplicateMiddleware < StandardError; end
   autoload :Connection,       'apis/connection'
   autoload :ConnectionScope,  'apis/connection_scope'
   autoload :Builder,          'apis/builder'
+  autoload :Request,          'apis/request'
   autoload :Response,         'apis/response'
 
   module Registerable
@@ -41,7 +44,11 @@ module Apis
 
   module Middleware
     module Request
+      autoload :Multipart,      'apis/middleware/request/multipart'
+
       extend Registerable
+
+      register :multipart, :Multipart
     end
 
     module Response

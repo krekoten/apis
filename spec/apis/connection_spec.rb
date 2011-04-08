@@ -1,230 +1,48 @@
 require 'spec_helper'
 
+class EnvCheck
+  class << self
+    attr_accessor :env
+    def call(env)
+      @env = env
+    end
+    def new(*args)
+      self
+    end
+  end
+end
+    
+
 describe Apis::Connection do
-  context 'configuration' do
-    context 'options' do
-      it 'sets url' do
-        Apis::Connection.new(:uri => 'http://api.example.org').uri.should == Addressable::URI.parse('http://api.example.org')
-      end
-
-      it 'sets url if it is only parameter' do
-        Apis::Connection.new('http://api.example.org').uri.should == Addressable::URI.parse('http://api.example.org')
-      end
-
-      it 'sets headers' do
-        Apis::Connection.new(
-          :headers => {
-            'Content-Type' => 'text',
-            'User-Agent' => 'apis'
-          }
-        ).headers.should == {
-          'Content-Type' => 'text',
-          'User-Agent' => 'apis'
-        }
-      end
-
-      it 'sets params' do
-        Apis::Connection.new(
-          :params => {:q => 'apis', :hl => 'uk'}
-        ).params.should == {:q => 'apis', :hl => 'uk'}
+  context "on request" do
+    [:head, :get, :post, :put, :delete].each do |method|
+      it "sets env[:method] to :#{method.to_s.upcase} on #{method}" do
+        Apis::Connection.new(:url => 'http://api.example.com/') do
+          use EnvCheck
+        end.send(method)
+        EnvCheck.env[:method].should == method.to_s.upcase.to_sym
       end
     end
 
-    context 'methods' do
-      let(:connection) { Apis::Connection.new }
-      it 'sets url' do
-        connection.uri = 'http://api.example.org'
-        connection.uri.should == Addressable::URI.parse('http://api.example.org')
-      end
-
-      it 'sets headers' do
-        connection.headers = {
-          'Content-Type' => 'text',
-          'User-Agent' => 'apis'
-        }
-        connection.headers.should == {
-          'Content-Type' => 'text',
-          'User-Agent' => 'apis'
-        }
-      end
-
-      it 'sets params' do
-        connection.params = {:q => 'apis', :hl => 'uk'}
-        connection.params.should == {:q => 'apis', :hl => 'uk'}
-      end
-
-      it 'updates headers' do
-        connection.headers = {'Content-Type' => 'text'}
-        connection.headers = {'User-Agent' => 'apis'}
-        connection.headers.should == {
-          'Content-Type' => 'text',
-          'User-Agent' => 'apis'
-        }
-      end
-
-      it 'updates params' do
-        connection.params = {:q => 'apis'}
-        connection.params = {:hl => 'uk'}
-        connection.params.should == {:q => 'apis', :hl => 'uk'}
-      end
+    it "sets env[:uri] to Addressable::URI object initialized with URL" do
+      Apis::Connection.new(:uri => 'http://api.example.com/') do
+        use EnvCheck
+      end.get
+      EnvCheck.env[:uri].should == Addressable::URI.parse('http://api.example.com/')
     end
 
-    context 'stack building' do
-      it 'constructs request stack' do
-        connection = Apis::Connection.new do
-          request do
-            use Middleware
-            use NewMiddleware
-            use RESTMiddleware
-          end
-        end
-
-        connection.request.to_a.should == [Middleware, NewMiddleware, RESTMiddleware]
-      end
-
-      it 'constructs response stack' do
-        connection = Apis::Connection.new do
-          response do
-            use Middleware
-            use NewMiddleware
-            use RESTMiddleware
-          end
-        end
-
-        connection.response.to_a.should == [Middleware, NewMiddleware, RESTMiddleware]
-      end
-
-      it 'sets adapter' do
-        connection = Apis::Connection.new do
-          adapter FakeAdapter
-        end
-        connection.adapter.should be_instance_of(FakeAdapter)
-      end
-
-      it 'finds adapter using symbol shortcut' do
-        Apis::Adapter.register(:fake, :FakeAdapter)
-        connection = Apis::Connection.new do
-          adapter :fake
-        end
-        connection.adapter.should be_instance_of(FakeAdapter)
-      end
-
-      it 'uses default adapter if none specified' do
-        connection = Apis::Connection.new
-        connection.adapter nil
-        connection.adapter.should be_instance_of(Apis::Adapter::NetHTTP)
-      end
-    end
-  end
-
-  context 'performing request' do
-    before do
-      @connection = Apis::Connection.new(:uri => server_host) do
-        adapter FakeAdapter
-      end
+    it "merges uri passed to connection with uri passed to request" do
+      Apis::Connection.new(:uri => 'http://api.example.com/') do
+        use EnvCheck
+      end.get('users/1')
+      EnvCheck.env[:uri].should == Addressable::URI.parse('http://api.example.com/users/1')
     end
 
-    [:get, :head, :post, :put, :delete].each do |method|
-      context method.to_s.upcase do
-        it 'passes method to adapter' do
-          @connection.send(method)
-          @connection.adapter.last_method.should == method
-        end
-
-        it 'passes path to adapter' do
-          @connection.send(method, "/#{method}")
-          @connection.adapter.last_path.should == "/#{method}"
-        end
-
-        it 'passes query params to adapter' do
-          @connection.send(method, "/#{method}", {:q => 'text'})
-          @connection.adapter.last_params.should == {:q => 'text'}
-        end
-
-        it 'passes params specified in block' do
-          @connection.send(method, "/#{method}") do |request|
-            request.params = {:test => 'params'}
-          end
-          @connection.adapter.last_params.should == {:test => 'params'}
-        end
-
-        it 'doesn\'t not overwrite params of connection' do
-          @connection.params = {:q => 'test'}
-          @connection.send(method, "/#{method}") do |request|
-            request.params = {:test => 'params'}
-          end
-          @connection.adapter.last_params.should == {:q => 'test', :test => 'params'}
-          @connection.params.should == {:q => 'test'}
-        end
-
-        it 'merges connection params with method params' do
-          @connection.params = {:test => 'param'}
-          @connection.send(method, "/#{method}", {:q => 'text'})
-          @connection.adapter.last_params.should == {:q => 'text', :test => 'param'}
-        end
-
-        it 'passes headers to adapter' do
-          @connection.send(method, "/#{method}", {}, {'Content-Type' => 'text'})
-          @connection.adapter.last_headers.should == {'Content-Type' => 'text'}
-        end
-
-        it 'merges connection headers with method headers' do
-          @connection.headers = {'User-Agent' => 'apis'}
-          @connection.send(method, "/#{method}", {}, {'Content-Type' => 'text'})
-          @connection.adapter.last_headers.should == {'Content-Type' => 'text', 'User-Agent' => 'apis'}
-        end
-
-        it 'doesn\'t overwrite headers of connection' do
-          @connection.headers = {:q => 'test'}
-          @connection.send(method, "/#{method}") do |request|
-            request.headers = {:test => 'params'}
-          end
-          @connection.adapter.last_headers.should == {:q => 'test', :test => 'params'}
-          @connection.headers.should == {:q => 'test'}
-        end
-      end
-    end
-  end
-
-  context 'request with middleware' do
-    context 'request middleware' do
-      before do
-        Apis::Middleware::Request.register(:middleware, :Middleware)
-        @connection = Apis::Connection.new(:uri => server_host) do
-          request do
-            use :middleware
-          end
-          adapter FakeAdapter
-        end
-      end
-
-      it 'calls midleware' do
-        @connection.get
-        @connection.adapter.last_headers.should == {'Middleware' => 'true'}
-      end
-
-      it "doesn't overwrite headers of connection" do
-        @connection.get
-        @connection.adapter.last_headers.should == {'Middleware' => 'true'}
-        @connection.headers.should == {}
-      end
-    end
-
-    context 'response midleware' do
-      before do
-        Apis::Middleware::Response.register(:res, :Response)
-        @connection = Apis::Connection.new(:uri => server_host) do
-          adapter FakeAdapter
-          response do
-            use :res
-          end
-        end
-      end
-
-      it 'calls midleware' do
-        response = @connection.get
-        response.body.should == 'altered'
-      end
+    it "sets env[:params] to params hash passed to request" do
+      Apis::Connection.new(:uri => 'http://api.example.com/') do
+        use EnvCheck
+      end.get(nil, :param => 'test')
+      EnvCheck.env[:params].should == {:param => 'test'}
     end
   end
 end

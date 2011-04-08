@@ -28,6 +28,9 @@ class FakeAdapter < Apis::Adapter::Abstract
     @last_method, @last_path, @last_params, @last_headers = method, path, params, headers
     [200, {}, 'body']
   end
+
+  def call(env)
+  end
 end
 
 module DirHelper

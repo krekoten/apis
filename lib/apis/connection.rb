@@ -1,96 +1,33 @@
-require 'addressable/uri'
-
 module Apis
   class Connection
-    def initialize(options = {})
-      @scope = Apis::ConnectionScope.new
-      @scope.headers, @scope.params = {}, {}
-
-      if String === options
-        self.uri = options
-      else
-        options.each do |key, value|
-          send("#{key}=", value) if respond_to?("#{key}=")
-        end
+    attr_reader :uri
+    def initialize(options)
+      options.each do |key, value|
+        send("#{key}=", value) if respond_to?("#{key}=")
       end
-
-      if block_given?
-        block = Proc.new
-        instance_eval(&block)
-      end
-      adapter(Apis::Adapter.default) unless @adapter
-    end
-
-    def uri
-      @scope.uri
+      @builder = Builder.new(&(block_given? ? Proc.new : nil))
     end
 
     def uri=(value)
-      @scope.uri = Addressable::URI.parse(value)
+      @uri = Addressable::URI.parse(value)
     end
 
-    def headers
-      @scope.headers
-    end
+    def head(*args)   make_request(:HEAD, *args) end
 
-    def headers=(value)
-      @scope.headers.merge!(value)
-    end
+    def get(*args)    make_request(:GET, *args) end
 
-    def params
-      @scope.params
-    end
+    def post(*args)   make_request(:POST, *args) end
 
-    def params=(value)
-      @scope.params.merge!(value)
-    end
+    def put(*args)    make_request(:PUT, *args) end
 
-    def request
-      block = block_given? ? Proc.new : nil
-      @request ||= Apis::Builder.new(:lookup_context => Apis::Middleware::Request, &block)
-      @request
-    end
+    def delete(*args) make_request(:DELETE, *args) end
 
-    def response
-      block = block_given? ? Proc.new : nil
-      @response ||= Apis::Builder.new(:lookup_context => Apis::Middleware::Response, &block)
-      @response
-    end
-
-    def adapter(value = nil)
-      if Symbol === value
-        value = Apis::Adapter.lookup(value)
-      end
-
-      @adapter = value.new(:uri => uri) if value
-      @adapter
-    end
-
-    [:get, :head, :post, :put, :delete].each do |method|
-      class_eval <<-RUBY, __FILE__, __LINE__ + 1
-        def #{method}(path = nil, params = {}, headers = {})
-          run_request(#{method.inspect}, path, params, headers, &(block_given? ? Proc.new : nil))
-        end
-      RUBY
-    end
-
-    def run_request(method, path = nil, params = {}, headers = {}, &block)
-      #block = block_given? ? Proc.new : nil
-      # TODO: refactor this, it's ugly
-      @scope.scoped do
-        self.params = params if params
-        self.headers = headers if headers
-        block.call(self) if block
-        path ||= uri.path.empty? ? '/' : uri.path
-        self.request.to_app.call(
-          :method => method,
-          :params => self.params,
-          :headers => self.headers
-        ) unless self.request.to_a.empty?
-        res = Apis::Response.new(*adapter.run(method, path, self.params, self.headers))
-        self.response.to_app.call(res) unless self.response.to_a.empty?
-        res
-      end
+    def make_request(method, uri = nil, params = {})
+      @builder.to_app.call(
+        :method => method,
+        :uri => uri ? self.uri.join(uri) : self.uri,
+        :params => params
+      )
     end
   end
 end
