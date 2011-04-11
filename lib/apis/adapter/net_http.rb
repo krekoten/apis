@@ -2,19 +2,26 @@ require 'net/http'
 
 module Apis
   module Adapter
-    class NetHTTP < Abstract
-      def connection
-        Net::HTTP.start(uri.host, uri.port)
-      end
+    class NetHTTP
+      def call(env)
+        env[:url].path = '/' if env[:url].path.empty?
+        http = Net::HTTP.new(env[:url].host, env[:url].port)
+        query = Addressable::URI.new
+        query.query_values = env[:params]
+        response = case env[:method]
+        when :GET
+          http.get(env[:url].path, env[:headers])
+        when :HEAD
+          http.head(env[:url].path, env[:headers])
+        when :POST
+          http.post(env[:url].path, query.query, env[:headers])
+        when :PUT
+          http.put(env[:url].path, query.query, env[:headers])
+        when :DELETE
+          http.delete(env[:url].path, env[:headers])
+        end
 
-      def run(method, path, params = {}, headers = {})
-        _module = Net::HTTP.const_get(method.to_s.capitalize)
-        request = _module.new(path)
-        response = connection.request(
-          request,
-          params.empty? ? nil : Addressable::URI.new.tap { |uri| uri.query_values = params }.query
-        )
-        [response.code.to_i] + response
+        [response.code.to_i, response, response.body]
       end
     end
   end

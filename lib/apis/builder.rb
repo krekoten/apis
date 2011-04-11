@@ -19,7 +19,7 @@ module Apis
         @adapter = nil
       end
       @adapter ||= -> do
-        (middleware || Apis::Adapter::NetHTTP).new(args, &block)
+        (middleware || Apis::Adapter::NetHTTP).new(*args, &block)
       end
     end
 

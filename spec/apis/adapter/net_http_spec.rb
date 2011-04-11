@@ -9,37 +9,37 @@ describe Apis::Adapter::NetHTTP do
     stop_server
   end
 
-  [:get, :post, :put, :delete, :head].each do |method|
-    context method.to_s.upcase do
-      it "returns body" do
-        adapter = Apis::Adapter::NetHTTP.new(:uri => Addressable::URI.parse(server_host))
-        status, headers, body = adapter.run(method, '/')
-        body.should == method.to_s.upcase
-      end unless method == :head
-
-      it "returns headers" do
-        adapter = Apis::Adapter::NetHTTP.new(:uri => Addressable::URI.parse(server_host))
-        status, headers, body = adapter.run(method, '/')
-        headers['X-Requested-With-Method'].should == method.to_s.upcase
-      end
-
+  [:HEAD, :GET, :POST, :PUT, :DELETE].each do |method|
+    context method do
       it "returns status" do
-        adapter = Apis::Adapter::NetHTTP.new(:uri => Addressable::URI.parse(server_host))
-        status, headers, body = adapter.run(method, '/')
+        adapter = Apis::Adapter::NetHTTP.new
+        status, headers, body = adapter.call(
+          :method   => method,
+          :url      => Addressable::URI.parse(server_host),
+          :headers  => {}
+        )
         status.should == 200
       end
 
-      it "sends params" do
-        adapter = Apis::Adapter::NetHTTP.new(:uri => Addressable::URI.parse(server_host))
-        status, headers, body = adapter.run(method, "/#{method}", {:param => 'value'})
-        headers['X-Sent-Params'].should == '{"param"=>"value"}'
+      it "returns body" do
+        adapter = Apis::Adapter::NetHTTP.new
+        status, headers, body = adapter.call(
+          :method   => method,
+          :url      => Addressable::URI.parse(server_host),
+          :headers  => {}
+        )
+        body.should == method.to_s
+      end unless method == :HEAD
+
+      it "returns headers" do
+        adapter = Apis::Adapter::NetHTTP.new
+        status, headers, body = adapter.call(
+          :method   => method,
+          :url      => Addressable::URI.parse(server_host),
+          :headers  => {}
+        )
+        headers['X-Requested-With-Method'].should == method.to_s
       end
     end
-  end
-
-  it 'registered under :net_http' do
-    Apis::Connection.new do
-      adapter :net_http
-    end.adapter.should be_instance_of(Apis::Adapter::NetHTTP)
   end
 end
