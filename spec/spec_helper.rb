@@ -1,5 +1,17 @@
 require File.expand_path('../../lib/apis', __FILE__)
 
+class EnvCheck
+  class << self
+    attr_accessor :env
+    def call(env)
+      @env = env
+    end
+    def new(*args)
+      self
+    end
+  end
+end
+
 class BaseMiddleware
   attr_accessor :app
   def initialize(app)

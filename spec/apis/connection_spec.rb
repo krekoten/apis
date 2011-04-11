@@ -1,17 +1,5 @@
 require 'spec_helper'
 
-class EnvCheck
-  class << self
-    attr_accessor :env
-    def call(env)
-      @env = env
-    end
-    def new(*args)
-      self
-    end
-  end
-end
-
 describe Apis::Connection do
   let(:connection) do
     Apis::Connection.new(:uri => 'http://api.example.com/') do

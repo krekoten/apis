@@ -12,4 +12,10 @@ module Apis
     autoload :NetHTTP,          'apis/adapter/net_http'
     autoload :RackTest,         'apis/adapter/rack_test'
   end
+
+  module Middleware
+    module Response
+      autoload :Json,             'apis/middleware/response/json'
+    end
+  end
 end

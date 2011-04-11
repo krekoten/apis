@@ -40,6 +40,17 @@ describe Apis::Adapter::NetHTTP do
         )
         headers['X-Requested-With-Method'].should == method.to_s
       end
+
+      it "sends params" do
+        adapter = Apis::Adapter::NetHTTP.new
+        status, headers, body = adapter.call(
+          :method   => method,
+          :url      => Addressable::URI.parse(server_host).join(method.to_s.downcase),
+          :headers  => {},
+          :params   => {:test => 'params'}
+        )
+        headers['X-Sent-Params'].should == %|{"test"=>"params"}|
+      end
     end
   end
 end

@@ -10,15 +10,15 @@ module Apis
         query.query_values = env[:params]
         response = case env[:method]
         when :GET
-          http.get(env[:url].path, env[:headers])
+          http.get([env[:url].path, query.query].compact.join('?'), env[:headers])
         when :HEAD
-          http.head(env[:url].path, env[:headers])
+          http.head([env[:url].path, query.query].compact.join('?'), env[:headers])
         when :POST
           http.post(env[:url].path, query.query, env[:headers])
         when :PUT
           http.put(env[:url].path, query.query, env[:headers])
         when :DELETE
-          http.delete(env[:url].path, env[:headers])
+          http.delete([env[:url].path, query.query].compact.join('?'), env[:headers])
         end
 
         [response.code.to_i, response, response.body]
