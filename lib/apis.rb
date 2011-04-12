@@ -3,7 +3,7 @@ $: << lib_dir unless $:.include?(lib_dir = File.expand_path('..', __FILE__))
 require 'addressable/uri'
 
 module Apis
-  class DuplicateMiddleware < StandardError; end
+
   autoload :Connection,       'apis/connection'
   autoload :Builder,          'apis/builder'
 

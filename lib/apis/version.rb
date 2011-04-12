@@ -1,3 +1,3 @@
 module Apis
-  VERSION = "0.5.0.pre1"
+  VERSION = "0.5.1.pre1"
 end
